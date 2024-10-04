@@ -6,6 +6,8 @@ import { CardModule } from './card/card.module';
 import { UserModule } from './user/user.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { NotificationModule } from './notification/notification.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import config from './config/config';
 
 @Module({
@@ -25,6 +27,8 @@ import config from './config/config';
         return configService.get('database');
       },
     }),
+    NotificationModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
