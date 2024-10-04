@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
+import { CardDetailsService } from './card-details/card-details.service';
 
 @Module({
-  providers: [],
+  providers: [CardDetailsService],
 })
 export class CardModule {}
