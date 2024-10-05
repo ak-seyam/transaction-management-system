@@ -4,27 +4,34 @@ import { DataSource, Repository } from 'typeorm';
 import Card from '../entities/card.entitiy';
 import Transaction from 'src/entities/transaction.entity';
 import Money from 'src/common/money';
+import { CardService } from './card.service';
 
 @Injectable()
 export class BalanceService {
-  constructor(private dataSource: DataSource) {}
+  constructor(
+    private dataSource: DataSource,
+    private cardService: CardService,
+  ) {}
 
-  async getBalance(cardId: string) {
+  async getBalance(cardToken: string) {
     const queryRunner = this.dataSource.createQueryRunner();
 
     try {
+      const card = await this.cardService.findCardByCardToken(cardToken);
+
+      if (!card) {
+        throw new Error('Unmanaged card token'); // TODO through domain specific errors
+      }
+
       await queryRunner.startTransaction();
 
       // lock the card
-      const card = await queryRunner.manager
+      await queryRunner.manager
         .getRepository(Card)
         .createQueryBuilder('card')
         .setLock('pessimistic_write')
-        .where('card.id = :id', { id: cardId })
+        .where('card.id = :id', { id: cardToken })
         .getOne();
-      if (!card) {
-        throw new Error('Invalid card id'); // TODO through domain specific error
-      }
 
       // get latest balance checkpoint
       const latestBalanceCheckpoint = await this.getLatestBalanceCheckpoint(

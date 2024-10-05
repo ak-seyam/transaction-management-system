@@ -1,15 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import Card from '../entities/card.entitiy';
 import { v4 as randomUUIDV4 } from 'uuid';
+import { CardDetails, CardSchema } from 'src/common/proto/service';
 
 @Injectable()
 export class CardService {
   constructor(@InjectRepository(Card) private cardRepo: Repository<Card>) {}
 
   async getCardByCardToken(token: string) {
-    const card = this.findCardByReference(token);
+    const card = this.findCardByCardToken(token);
     if (card) {
       return card;
     }
@@ -19,7 +20,7 @@ export class CardService {
     return newCard;
   }
 
-  async findCardByReference(cardToken: string) {
+  async findCardByCardToken(cardToken: string) {
     return await this.cardRepo.findOne({
       where: {
         cardToken: cardToken,
@@ -32,5 +33,13 @@ export class CardService {
     card.cardToken = token;
     card.userId = randomUUIDV4();
     return await this.cardRepo.save(card);
+  }
+
+  async getCardDetails(token: string): Promise<CardDetails> {
+    Logger.debug(`getting card details for token ${token}`);
+    return {
+      cardSchewma: CardSchema.VISA,
+      censoredCardNumber: '1234******342423',
+    };
   }
 }

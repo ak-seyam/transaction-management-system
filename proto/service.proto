@@ -5,7 +5,8 @@ package transaction;
 import "google/protobuf/timestamp.proto";
 
 service TransactionService {
-    rpc getTransactionEvent(TransactionEvent) returns (Ack);
+    rpc sendTransactionEvent(TransactionEvent) returns (Ack);
+    rpc getTransactionHistory(TransactionHistoryRequest) returns (TransactionHistoryResponse);
 }
 
 message TransactionEvent {
@@ -20,6 +21,7 @@ message TransactionEvent {
     google.protobuf.Timestamp providerEventTime = 9;
     Provider provider = 10;
     string cardToken = 11;
+    string eventId = 12;
 }
 
 enum MessaageType { 
@@ -40,4 +42,45 @@ enum AckStatus {
 enum Provider {
     PSP1 = 0;
     PSP2 = 1;
+}
+
+enum TransactionStatus {
+    PENDING = 0;
+    SUCCESSFUL = 1;
+}
+
+message Transaction {
+    string id = 1;
+    Money total = 2;
+    TransactionStatus status = 3;
+    CardDetails cardDetails = 4;
+    string reference = 5;
+}
+
+message Money {
+    int64 amount = 1;
+    int32 fractionalDigits = 2;
+    string currency = 3;
+}
+
+message TransactionHistoryResponse {
+    repeated Transaction transactions = 1;
+    google.protobuf.Timestamp currentTime = 2;
+}
+
+message CardDetails {
+    string censoredCardNumber = 1;
+    CardSchema cardSchewma = 2;
+}
+
+message TransactionHistoryRequest {
+    string userId = 1;
+}
+
+enum CardSchema {
+    VISA = 0;
+    MASTER_CARD = 2;
+    AMERICAN_EXPRESS = 3;
+    MADA = 4;
+    MEZA = 5;
 }

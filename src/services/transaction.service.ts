@@ -5,6 +5,9 @@ import {
   AckStatus,
   MessaageType,
   TransactionEvent,
+  TransactionHistoryResponse,
+  Transaction as TransactionDto,
+  TransactionStatus as TransactionStatusDto,
 } from '../common/proto/service';
 import { InjectRepository } from '@nestjs/typeorm';
 import Transaction from 'src/entities/transaction.entity';
@@ -15,6 +18,7 @@ import TransactionStatus from 'src/entities/transaction-status';
 import { BalanceService } from './balance.service';
 import Card from 'src/entities/card.entitiy';
 import { mapProvider } from 'src/common/utils';
+import { CardService } from './card.service';
 
 @Injectable()
 export class TransactionService {
@@ -26,6 +30,7 @@ export class TransactionService {
     private balanceService: BalanceService,
     @InjectRepository(Card)
     private cardRepository: Repository<Card>,
+    private cardService: CardService,
   ) {}
 
   async receiveProviderTransactionEvent(event: TransactionEvent): Promise<Ack> {
@@ -181,5 +186,91 @@ export class TransactionService {
       await this.notify(Events.TRANSACTION_AUTHORIZING_REJECTED, event);
       throw new Error('Transaction clearing already exist'); // TODO use domain speicfic error
     }
+  }
+
+  async getTransactionHistory(
+    userId: string,
+  ): Promise<TransactionHistoryResponse> {
+    const transactions = await this.transactionRepository
+      .createQueryBuilder('trx')
+      .leftJoinAndSelect('trx.card', 'card')
+      .where('card.userId = :userId', { userId })
+      .getMany();
+
+    const successfulTranscations = transactions.filter(
+      (trx) => trx.status === TransactionStatus.CLEARED,
+    );
+
+    const pendingTransactions = transactions.filter(
+      (trx) => trx.status === TransactionStatus.AUTHORIZED,
+    );
+
+    const reducedTransactions = this.reduceTrasnactions(
+      pendingTransactions,
+      successfulTranscations,
+    );
+
+    const transactionDtos =
+      await this.mapToTransactionHistoryDtos(reducedTransactions);
+
+    return {
+      currentTime: new Date(),
+      transactions: transactionDtos,
+    };
+  }
+
+  private reduceTrasnactions(
+    pendingTransactions: Transaction[],
+    successfulTranscations: Transaction[],
+  ) {
+    const res = [];
+    for (const trx of pendingTransactions) {
+      const successfulTransactionToBeAdded = successfulTranscations.find(
+        (successfulTrx) => successfulTrx.reference === trx.reference,
+      );
+      if (successfulTransactionToBeAdded) {
+        res.push(successfulTransactionToBeAdded);
+      } else {
+        res.push(trx);
+      }
+    }
+    return res;
+  }
+
+  reducedStatus(newTrx: TransactionDto, existingTrx: TransactionDto) {
+    if (newTrx.status === TransactionStatusDto.SUCCESSFUL) {
+      return TransactionStatusDto.SUCCESSFUL;
+    } else {
+      return existingTrx.status;
+    }
+  }
+
+  async mapToTransactionHistoryDtos(
+    transactions: Transaction[],
+  ): Promise<TransactionDto[]> {
+    return Promise.all(
+      transactions.map(async (trx) => {
+        return await this.mapTransactionToTransactionHistoryDto(trx);
+      }),
+    );
+  }
+
+  async mapTransactionToTransactionHistoryDto(
+    trx: Transaction,
+  ): Promise<TransactionDto> {
+    return {
+      cardDetails: await this.cardService.getCardDetails(trx?.card.cardToken),
+      id: trx.id,
+      reference: trx.reference,
+      status:
+        trx.status == TransactionStatus.AUTHORIZED
+          ? TransactionStatusDto.PENDING
+          : TransactionStatusDto.SUCCESSFUL,
+      total: {
+        amount: trx.amount,
+        currency: trx.currency,
+        fractionalDigits: trx.fractionalDigits,
+      },
+    };
   }
 }

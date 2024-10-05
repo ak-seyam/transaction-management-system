@@ -5,11 +5,11 @@
 // source: proto/service.proto
 
 /* eslint-disable */
-import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
-import { wrappers } from 'protobufjs';
-import { Observable } from 'rxjs';
+import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
+import { wrappers } from "protobufjs";
+import { Observable } from "rxjs";
 
-export const protobufPackage = 'transaction';
+export const protobufPackage = "transaction";
 
 export enum MessaageType {
   AUTHORIZATION = 0,
@@ -26,6 +26,21 @@ export enum AckStatus {
 export enum Provider {
   PSP1 = 0,
   PSP2 = 1,
+  UNRECOGNIZED = -1,
+}
+
+export enum TransactionStatus {
+  PENDING = 0,
+  SUCCESSFUL = 1,
+  UNRECOGNIZED = -1,
+}
+
+export enum CardSchema {
+  VISA = 0,
+  MASTER_CARD = 2,
+  AMERICAN_EXPRESS = 3,
+  MADA = 4,
+  MEZA = 5,
   UNRECOGNIZED = -1,
 }
 
@@ -49,14 +64,39 @@ export interface Ack {
   eventTime: Date | undefined;
 }
 
-export const TRANSACTION_PACKAGE_NAME = 'transaction';
+export interface Transaction {
+  id: string;
+  total: Money | undefined;
+  status: TransactionStatus;
+  cardDetails: CardDetails | undefined;
+  reference: string;
+}
 
-wrappers['.google.protobuf.Timestamp'] = {
+export interface Money {
+  amount: number;
+  fractionalDigits: number;
+  currency: string;
+}
+
+export interface TransactionHistoryResponse {
+  transactions: Transaction[];
+  currentTime: Date | undefined;
+}
+
+export interface CardDetails {
+  censoredCardNumber: string;
+  cardSchewma: CardSchema;
+}
+
+export interface TransactionHistoryRequest {
+  userId: string;
+}
+
+export const TRANSACTION_PACKAGE_NAME = "transaction";
+
+wrappers[".google.protobuf.Timestamp"] = {
   fromObject(value: Date) {
-    return {
-      seconds: value.getTime() / 1000,
-      nanos: (value.getTime() % 1000) * 1e6,
-    };
+    return { seconds: value.getTime() / 1000, nanos: (value.getTime() % 1000) * 1e6 };
   },
   toObject(message: { seconds: number; nanos: number }) {
     return new Date(message.seconds * 1000 + message.nanos / 1e6);
@@ -64,42 +104,32 @@ wrappers['.google.protobuf.Timestamp'] = {
 } as any;
 
 export interface TransactionServiceClient {
-  getTransactionEvent(request: TransactionEvent): Observable<Ack>;
+  sendTransactionEvent(request: TransactionEvent): Observable<Ack>;
+
+  getTransactionHistory(request: TransactionHistoryRequest): Observable<TransactionHistoryResponse>;
 }
 
 export interface TransactionServiceController {
-  getTransactionEvent(
-    request: TransactionEvent,
-  ): Promise<Ack> | Observable<Ack> | Ack;
+  sendTransactionEvent(request: TransactionEvent): Promise<Ack> | Observable<Ack> | Ack;
+
+  getTransactionHistory(
+    request: TransactionHistoryRequest,
+  ): Promise<TransactionHistoryResponse> | Observable<TransactionHistoryResponse> | TransactionHistoryResponse;
 }
 
 export function TransactionServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ['getTransactionEvent'];
+    const grpcMethods: string[] = ["sendTransactionEvent", "getTransactionHistory"];
     for (const method of grpcMethods) {
-      const descriptor: any = Reflect.getOwnPropertyDescriptor(
-        constructor.prototype,
-        method,
-      );
-      GrpcMethod('TransactionService', method)(
-        constructor.prototype[method],
-        method,
-        descriptor,
-      );
+      const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
+      GrpcMethod("TransactionService", method)(constructor.prototype[method], method, descriptor);
     }
     const grpcStreamMethods: string[] = [];
     for (const method of grpcStreamMethods) {
-      const descriptor: any = Reflect.getOwnPropertyDescriptor(
-        constructor.prototype,
-        method,
-      );
-      GrpcStreamMethod('TransactionService', method)(
-        constructor.prototype[method],
-        method,
-        descriptor,
-      );
+      const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
+      GrpcStreamMethod("TransactionService", method)(constructor.prototype[method], method, descriptor);
     }
   };
 }
 
-export const TRANSACTION_SERVICE_NAME = 'TransactionService';
+export const TRANSACTION_SERVICE_NAME = "TransactionService";

@@ -2,6 +2,8 @@ import { Controller } from '@nestjs/common';
 import {
   Ack,
   TransactionEvent,
+  TransactionHistoryRequest,
+  TransactionHistoryResponse,
   TransactionServiceController,
   TransactionServiceControllerMethods,
 } from '../common/proto/service';
@@ -15,7 +17,13 @@ export default class TransactionController
 {
   constructor(private service: TransactionService) {}
 
-  async getTransactionEvent(request: TransactionEvent): Promise<Ack> {
+  async getTransactionHistory(
+    request: TransactionHistoryRequest,
+  ): Promise<TransactionHistoryResponse> {
+    return await this.service.getTransactionHistory(request.userId);
+  }
+
+  async sendTransactionEvent(request: TransactionEvent): Promise<Ack> {
     return await this.service.receiveProviderTransactionEvent(request);
   }
 
