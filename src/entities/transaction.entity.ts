@@ -55,4 +55,7 @@ export default class Transaction {
 
   @ManyToOne(() => Card, (card) => card.transactions)
   card: Card;
+
+  @Column({ name: 'idempotency_key', unique: true })
+  idempotencyKey: string;
 }

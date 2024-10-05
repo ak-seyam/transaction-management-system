@@ -33,4 +33,8 @@ export class TransactionService {
       };
     }
   }
+
+  handleTransactionEvent(event: TransactionEvent) {
+    throw new Error('Method not implemented.');
+  }
 }

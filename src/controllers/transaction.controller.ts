@@ -1,4 +1,4 @@
-import { Controller, Logger } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import {
   Ack,
   TransactionEvent,
@@ -21,6 +21,6 @@ export default class TransactionController
 
   @EventPattern('transactions_events')
   async handleTranasctionEvent(data: Record<string, TransactionEvent>) {
-    Logger.log(`received ${data}`);
+    await this.service.handleTransactionEvent(data.value);
   }
 }
