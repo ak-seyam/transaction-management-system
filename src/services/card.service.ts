@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import Card from './card.entitiy';
+import Card from '../entities/card.entitiy';
 import { v4 as randomUUIDV4 } from 'uuid';
 
 @Injectable()

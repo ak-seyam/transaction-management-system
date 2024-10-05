@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import TransactionStatus from './transaction-status';
 import PSP from './transaction-psp';
-import Card from 'src/card/card.entitiy';
+import Card from 'src/entities/card.entitiy';
 
 @Entity()
 export default class Transaction {

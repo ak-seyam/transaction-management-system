@@ -1,17 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import BalanceCheckpoint from './blance-checkpoint.entity';
+import BalanceCheckpoint from '../entities/blance-checkpoint.entity';
 import { DataSource, Repository } from 'typeorm';
-import Card from './card.entitiy';
-import Transaction from 'src/transaction/transaction.entity';
+import Card from '../entities/card.entitiy';
+import Transaction from 'src/entities/transaction.entity';
 import Money from 'src/common/money';
 
 @Injectable()
 export class BalanceService {
-  constructor(
-    @InjectRepository(BalanceCheckpoint)
-    private dataSource: DataSource,
-  ) {}
+  constructor(private dataSource: DataSource) {}
 
   private async getBalance(cardId: string) {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -44,13 +40,25 @@ export class BalanceService {
       );
 
       // calculate the balance
-      const balanceAmount = this.calculateBalance(transactions);
+      const utilizationAfterLastCheckpoint =
+        this.calculateUtilization(transactions);
 
       const balance = new Money({
-        amount: balanceAmount,
+        amount: this.calculateBalanceAmount(
+          card,
+          latestBalanceCheckpoint,
+          utilizationAfterLastCheckpoint,
+        ),
         fractionalDigits: card.limitFractionalDigits,
         currency: card.limitCurrency,
       });
+
+      // create checkpoint
+      await this.createNewBalanceCheckpoint(
+        queryRunner.manager.getRepository(BalanceCheckpoint),
+        card,
+        balance,
+      );
 
       // commit transaction
       await queryRunner.commitTransaction();
@@ -63,7 +71,18 @@ export class BalanceService {
     }
   }
 
-  calculateBalance(transactions: Transaction[]): number {
+  calculateBalanceAmount(
+    card: Card,
+    latestBalanceCheckpoint: BalanceCheckpoint,
+    utilizationAfterLastCheckpoint: number,
+  ): number {
+    if (latestBalanceCheckpoint) {
+      return latestBalanceCheckpoint.amount - utilizationAfterLastCheckpoint;
+    }
+    return card.limitAmount - utilizationAfterLastCheckpoint;
+  }
+
+  calculateUtilization(transactions: Transaction[]): number {
     const visitedTransactions = new Set(); // we should take into consider the authorized transactions as well
     let sum = 0;
     for (const trx of transactions) {
