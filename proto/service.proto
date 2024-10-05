@@ -18,6 +18,8 @@ message TransactionEvent {
     int64 feesAmount = 7;
     int32 feesFractionalDigits = 8;
     google.protobuf.Timestamp providerEventTime = 9;
+    Provider provider = 10;
+    string cardToken = 11;
 }
 
 enum MessaageType { 
@@ -33,4 +35,9 @@ message Ack {
 enum AckStatus {
     SUCCESS = 0;
     FAILED = 1;
+}
+
+enum Provider {
+    PSP1 = 0;
+    PSP2 = 1;
 }

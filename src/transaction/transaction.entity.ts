@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import TransactionStatus from './transaction-status';
+import PSP from './transaction-psp';
 
 @Entity()
 export default class Transaction {
@@ -44,4 +45,7 @@ export default class Transaction {
 
   @Column({ name: 'provider_event_time', nullable: true })
   providerEventTime: Date;
+
+  @Column({ name: 'psp', type: 'enum' })
+  psp: PSP;
 }

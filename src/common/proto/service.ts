@@ -2,7 +2,7 @@
 // versions:
 //   protoc-gen-ts_proto  v2.2.2
 //   protoc               v3.21.12
-// source: src/proto/service.proto
+// source: proto/service.proto
 
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
@@ -23,6 +23,12 @@ export enum AckStatus {
   UNRECOGNIZED = -1,
 }
 
+export enum Provider {
+  PSP1 = 0,
+  PSP2 = 1,
+  UNRECOGNIZED = -1,
+}
+
 export interface TransactionEvent {
   type: MessaageType;
   reference: string;
@@ -33,6 +39,8 @@ export interface TransactionEvent {
   feesAmount: number;
   feesFractionalDigits: number;
   providerEventTime: Date | undefined;
+  provider: Provider;
+  cardToken: string;
 }
 
 export interface Ack {

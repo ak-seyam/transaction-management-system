@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
-import { Ack, AckStatus, TransactionEvent } from './transaction.proto-service';
+import { Ack, AckStatus, TransactionEvent } from '../common/proto/service';
 
 @Injectable()
 export class TransactionService {

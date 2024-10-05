@@ -4,7 +4,7 @@ import {
   TransactionEvent,
   TransactionServiceController,
   TransactionServiceControllerMethods,
-} from './transaction.proto-service';
+} from '../common/proto/service';
 import { TransactionService } from './transaction.service';
 import { EventPattern } from '@nestjs/microservices';
 

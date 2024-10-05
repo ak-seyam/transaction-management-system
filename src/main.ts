@@ -15,9 +15,6 @@ async function bootstrap() {
       run: {
         autoCommit: false,
       },
-      subscribe: {
-        fromBeginning: true,
-      },
       consumer: {
         groupId: 'transaction-service-consumer-group', // TODO use env vars
       },
@@ -28,7 +25,7 @@ async function bootstrap() {
     transport: Transport.GRPC,
     options: {
       package: 'transaction',
-      protoPath: join(__dirname, 'proto/service.proto'),
+      protoPath: join(__dirname, '../proto/service.proto'),
       onLoadPackageDefinition: (pkg, server) => {
         new ReflectionService(pkg).addToServer(server);
       },
