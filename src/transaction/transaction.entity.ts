@@ -41,4 +41,7 @@ export default class Transaction {
 
   @UpdateDateColumn({ type: 'datetime', name: 'created_at' })
   updatedAt: Date;
+
+  @Column({ name: 'provider_event_time', nullable: true })
+  providerEventTime: Date;
 }

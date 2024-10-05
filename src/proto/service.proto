@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package transaction;
+
+import "google/protobuf/timestamp.proto";
+
+service TransactionService {
+    rpc getTransactionEvent(TransactionEvent) returns (Ack);
+}
+
+message TransactionEvent {
+    MessaageType type = 1;
+    string reference = 2;
+    string currency = 3;
+    int64 amount = 4;
+    int32 fractionalDigits = 5;
+    string feesCurrency = 6;
+    int64 feesAmount = 7;
+    int32 feesFractionalDigits = 8;
+    google.protobuf.Timestamp providerEventTime = 9;
+}
+
+enum MessaageType { 
+    AUTHORIZATION = 0;
+    CLEARING = 1;
+}
+
+message Ack {
+    AckStatus status = 1;
+    google.protobuf.Timestamp eventTime = 2;
+}
+
+enum AckStatus {
+    SUCCESS = 0;
+    FAILED = 1;
+}
