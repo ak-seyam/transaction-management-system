@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ClientKafka } from '@nestjs/microservices';
+import { ClientKafka, KafkaContext } from '@nestjs/microservices';
 import {
   Ack,
   AckStatus,
@@ -64,15 +64,15 @@ export class TransactionService {
     }
   }
 
-  async handleTransactionEvent(event: TransactionEvent) {
+  async handleTransactionEvent(event: TransactionEvent, ctx: KafkaContext) {
     if (event.type === MessaageType.AUTHORIZATION) {
-      await this.authorize(event);
+      await this.authorize(event, ctx);
     } else {
-      await this.clear(event);
+      await this.clear(event, ctx);
     }
   }
 
-  async clear(event: TransactionEvent) {
+  async clear(event: TransactionEvent, ctx: KafkaContext) {
     const existingTransaction = await this.transactionRepository
       .createQueryBuilder('trx')
       .leftJoinAndSelect('trx.card', 'card')
@@ -93,11 +93,11 @@ export class TransactionService {
     });
 
     if (!authorizationTrx) {
-      await this.notify(Events.TRANSACTION_CLEARING_REJECTED, event);
+      await this.notify(Events.TRANSACTION_CLEARING_REJECTED, event, ctx);
       return;
     }
 
-    await this.validateClearingRequest(authorizationTrx, event);
+    await this.validateClearingRequest(authorizationTrx, event, ctx);
 
     const card = await this.cardRepository.findOne({
       where: { cardToken: event.cardToken },
@@ -111,14 +111,15 @@ export class TransactionService {
 
     await this.transactionRepository.save(clearingTrx);
 
-    await this.notify(Events.TRANSACTION_CLEARING_ACCEPTED, event);
+    await this.notify(Events.TRANSACTION_CLEARING_ACCEPTED, event, ctx);
   }
 
-  async notify(eventType: Events, event: TransactionEvent) {
+  async notify(eventType: Events, event: TransactionEvent, ctx: KafkaContext) {
     await this.eventEmitter.emitAsync(eventType, event);
+    await this.commit(ctx);
   }
 
-  async authorize(event: TransactionEvent) {
+  async authorize(event: TransactionEvent, ctx: KafkaContext) {
     const card = await this.cardRepository.findOne({
       where: {
         cardToken: event.cardToken,
@@ -130,7 +131,7 @@ export class TransactionService {
     const canCover = event.amount <= balance.amountInBaseCurrency;
 
     if (!canCover) {
-      this.notify(Events.TRANSACTION_AUTHORIZING_REJECTED, event);
+      this.notify(Events.TRANSACTION_AUTHORIZING_REJECTED, event, ctx);
     }
 
     const authorizationTrx = this.createTransaction(
@@ -141,7 +142,15 @@ export class TransactionService {
 
     await this.transactionRepository.save(authorizationTrx);
 
-    await this.notify(Events.TRANSACTION_AUTHORIZING_ACCEPTED, event);
+    await this.notify(Events.TRANSACTION_AUTHORIZING_ACCEPTED, event, ctx);
+  }
+
+  async commit(ctx: KafkaContext) {
+    const { offset } = ctx.getMessage();
+    const partition = ctx.getPartition();
+    const topic = ctx.getTopic();
+    const consumer = ctx.getConsumer();
+    await consumer.commitOffsets([{ topic, partition, offset }]);
   }
 
   private createTransaction(
@@ -169,11 +178,14 @@ export class TransactionService {
   async validateClearingRequest(
     authorizationTrx: Transaction,
     event: TransactionEvent,
+    ctx: KafkaContext,
   ) {
     if (!event.amount) {
+      this.commit(ctx);
       throw new Error('Invalid amount'); // TODO use domain speicfic error
     }
     if (event.amount != authorizationTrx.amount) {
+      this.commit(ctx);
       throw new Error('Invalid amount'); // TODO use domain speicfic error
     }
     const existingClearingRequest = await this.transactionRepository.findOne({
@@ -183,7 +195,7 @@ export class TransactionService {
       },
     });
     if (existingClearingRequest != null) {
-      await this.notify(Events.TRANSACTION_AUTHORIZING_REJECTED, event);
+      await this.notify(Events.TRANSACTION_AUTHORIZING_REJECTED, event, ctx);
       throw new Error('Transaction clearing already exist'); // TODO use domain speicfic error
     }
   }

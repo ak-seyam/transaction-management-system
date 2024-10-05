@@ -36,11 +36,11 @@
     "pg": "^8.13.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
-    "ts-proto": "^2.2.2",
     "typeorm": "^0.3.20",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "ts-proto": "^2.2.2",
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",

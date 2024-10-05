@@ -8,7 +8,12 @@ import {
   TransactionServiceControllerMethods,
 } from '../common/proto/service';
 import { TransactionService } from '../services/transaction.service';
-import { EventPattern } from '@nestjs/microservices';
+import {
+  Ctx,
+  EventPattern,
+  KafkaContext,
+  Payload,
+} from '@nestjs/microservices';
 
 @Controller('transaction')
 @TransactionServiceControllerMethods()
@@ -28,7 +33,10 @@ export default class TransactionController
   }
 
   @EventPattern('transactions_events')
-  async handleTranasctionEvent(data: Record<string, TransactionEvent>) {
-    await this.service.handleTransactionEvent(data.value);
+  async handleTranasctionEvent(
+    @Payload() data: TransactionEvent,
+    @Ctx() ctx: KafkaContext,
+  ) {
+    await this.service.handleTransactionEvent(data, ctx);
   }
 }
