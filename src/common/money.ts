@@ -5,9 +5,10 @@ type MoneyStructure = {
 };
 
 export default class Money {
-  private amountInBaseCurrency: number;
-  private fractionalDigits: number;
-  private currency: string;
+  readonly amountInBaseCurrency: number;
+  readonly fractionalDigits: number;
+  readonly currency: string;
+
   constructor(moneyStructure: MoneyStructure) {
     this.amountInBaseCurrency = moneyStructure.amount;
     this.fractionalDigits = moneyStructure.fractionalDigits;

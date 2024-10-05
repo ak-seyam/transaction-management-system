@@ -2,28 +2,23 @@ import { Module } from '@nestjs/common';
 import { TransactionModule } from './transaction/transaction.module';
 import { CardModule } from './card/card.module';
 import { UserModule } from './user/user.module';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificationModule } from './notification/notification.module';
 import { AnalyticsModule } from './analytics/analytics.module';
-import config from './config/config';
 
 @Module({
   imports: [
     TransactionModule,
     CardModule,
     UserModule,
-    ConfigModule.forRoot({
-      isGlobal: true,
-      load: [config],
-      envFilePath: `${process.env.PROFILE || 'dev'}.env`,
-    }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        return configService.get('database');
-      },
+    TypeOrmModule.forRoot({
+      host: process.env['DB_HOST'],
+      port: parseInt(process.env['DB_PORT']) || 5432,
+      username: process.env['DB_USERNAME'],
+      password: process.env['DB_PASSWORD'],
+      database: process.env['DB_NAME'],
+      type: 'postgres',
+      autoLoadEntities: true,
     }),
     NotificationModule,
     AnalyticsModule,

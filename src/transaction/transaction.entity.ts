@@ -2,18 +2,22 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import TransactionStatus from './transaction-status';
 import PSP from './transaction-psp';
+import Card from 'src/card/card.entitiy';
 
 @Entity()
 export default class Transaction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column()
+  @Index()
   reference: string;
 
   @Column()
@@ -25,7 +29,7 @@ export default class Transaction {
   @Column({ type: 'bigint' })
   amount: number;
 
-  @Column({ type: 'enum' })
+  @Column({ type: 'simple-enum' })
   status: TransactionStatus;
 
   @Column({ name: 'fees_currency', nullable: true })
@@ -37,15 +41,18 @@ export default class Transaction {
   @Column({ type: 'bigint', nullable: true })
   feesAmount: number;
 
-  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
+  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'datetime', name: 'created_at' })
+  @UpdateDateColumn({ type: 'timestamp', name: 'created_at' })
   updatedAt: Date;
 
   @Column({ name: 'provider_event_time', nullable: true })
   providerEventTime: Date;
 
-  @Column({ name: 'psp', type: 'enum' })
+  @Column({ name: 'psp', type: 'simple-enum' })
   psp: PSP;
+
+  @ManyToOne(() => Card, (card) => card.transactions)
+  card: Card;
 }
