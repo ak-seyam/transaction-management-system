@@ -5,11 +5,11 @@
 // source: proto/service.proto
 
 /* eslint-disable */
-import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
-import { wrappers } from "protobufjs";
-import { Observable } from "rxjs";
+import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
+import { wrappers } from 'protobufjs';
+import { Observable } from 'rxjs';
 
-export const protobufPackage = "transaction";
+export const protobufPackage = 'transaction';
 
 export enum MessaageType {
   AUTHORIZATION = 0,
@@ -41,6 +41,7 @@ export interface TransactionEvent {
   providerEventTime: Date | undefined;
   provider: Provider;
   cardToken: string;
+  eventId: string;
 }
 
 export interface Ack {
@@ -48,11 +49,14 @@ export interface Ack {
   eventTime: Date | undefined;
 }
 
-export const TRANSACTION_PACKAGE_NAME = "transaction";
+export const TRANSACTION_PACKAGE_NAME = 'transaction';
 
-wrappers[".google.protobuf.Timestamp"] = {
+wrappers['.google.protobuf.Timestamp'] = {
   fromObject(value: Date) {
-    return { seconds: value.getTime() / 1000, nanos: (value.getTime() % 1000) * 1e6 };
+    return {
+      seconds: value.getTime() / 1000,
+      nanos: (value.getTime() % 1000) * 1e6,
+    };
   },
   toObject(message: { seconds: number; nanos: number }) {
     return new Date(message.seconds * 1000 + message.nanos / 1e6);
@@ -64,22 +68,38 @@ export interface TransactionServiceClient {
 }
 
 export interface TransactionServiceController {
-  getTransactionEvent(request: TransactionEvent): Promise<Ack> | Observable<Ack> | Ack;
+  getTransactionEvent(
+    request: TransactionEvent,
+  ): Promise<Ack> | Observable<Ack> | Ack;
 }
 
 export function TransactionServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ["getTransactionEvent"];
+    const grpcMethods: string[] = ['getTransactionEvent'];
     for (const method of grpcMethods) {
-      const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcMethod("TransactionService", method)(constructor.prototype[method], method, descriptor);
+      const descriptor: any = Reflect.getOwnPropertyDescriptor(
+        constructor.prototype,
+        method,
+      );
+      GrpcMethod('TransactionService', method)(
+        constructor.prototype[method],
+        method,
+        descriptor,
+      );
     }
     const grpcStreamMethods: string[] = [];
     for (const method of grpcStreamMethods) {
-      const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcStreamMethod("TransactionService", method)(constructor.prototype[method], method, descriptor);
+      const descriptor: any = Reflect.getOwnPropertyDescriptor(
+        constructor.prototype,
+        method,
+      );
+      GrpcStreamMethod('TransactionService', method)(
+        constructor.prototype[method],
+        method,
+        descriptor,
+      );
     }
   };
 }
 
-export const TRANSACTION_SERVICE_NAME = "TransactionService";
+export const TRANSACTION_SERVICE_NAME = 'TransactionService';

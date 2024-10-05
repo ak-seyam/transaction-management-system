@@ -9,6 +9,7 @@ import { NotificationService } from './notification.service';
 import { TransactionService } from './transaction.service';
 import { AnalyticsService } from './analytics.service';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { UserService } from 'src/user/user.service';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
     NotificationService,
     TransactionService,
     AnalyticsService,
+    UserService,
   ],
   exports: [TransactionService],
 })

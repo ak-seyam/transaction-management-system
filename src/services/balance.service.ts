@@ -9,7 +9,7 @@ import Money from 'src/common/money';
 export class BalanceService {
   constructor(private dataSource: DataSource) {}
 
-  private async getBalance(cardId: string) {
+  async getBalance(cardId: string) {
     const queryRunner = this.dataSource.createQueryRunner();
 
     try {
@@ -71,7 +71,7 @@ export class BalanceService {
     }
   }
 
-  calculateBalanceAmount(
+  private calculateBalanceAmount(
     card: Card,
     latestBalanceCheckpoint: BalanceCheckpoint,
     utilizationAfterLastCheckpoint: number,
@@ -82,7 +82,7 @@ export class BalanceService {
     return card.limitAmount - utilizationAfterLastCheckpoint;
   }
 
-  calculateUtilization(transactions: Transaction[]): number {
+  private calculateUtilization(transactions: Transaction[]): number {
     const visitedTransactions = new Set(); // we should take into consider the authorized transactions as well
     let sum = 0;
     for (const trx of transactions) {
@@ -107,7 +107,7 @@ export class BalanceService {
     return latestBalanceCheckpoint;
   }
 
-  async createNewBalanceCheckpoint(
+  private async createNewBalanceCheckpoint(
     repo: Repository<BalanceCheckpoint>,
     card: Card,
     balance: Money,
@@ -120,7 +120,7 @@ export class BalanceService {
     return await repo.save(checkpoint);
   }
 
-  async getTransactionsFrom(
+  private async getTransactionsFrom(
     repo: Repository<Transaction>,
     createdAt: Date,
     card: Card,

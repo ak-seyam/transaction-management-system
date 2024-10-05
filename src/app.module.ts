@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServicesModule } from './services/services.module';
 import { ControllersModule } from './controllers/controllers.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ControllersModule } from './controllers/controllers.module';
     }),
     ServicesModule,
     ControllersModule,
+    EventEmitterModule.forRoot(),
   ],
   controllers: [],
   providers: [],
