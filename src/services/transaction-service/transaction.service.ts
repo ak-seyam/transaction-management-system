@@ -8,17 +8,17 @@ import {
   TransactionHistoryResponse,
   Transaction as TransactionDto,
   TransactionStatus as TransactionStatusDto,
-} from '../common/proto/service';
+} from '@common/proto/service';
 import { InjectRepository } from '@nestjs/typeorm';
 import Transaction from 'src/entities/transaction.entity';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Events } from 'src/common/constants';
 import TransactionStatus from 'src/entities/transaction-status';
-import { BalanceService } from './balance.service';
+import { BalanceService } from '@services/balance-service/balance.service';
 import Card from 'src/entities/card.entitiy';
 import { mapProvider } from 'src/common/utils';
-import { CardService } from './card.service';
+import { CardService } from '@services/card-service/card.service';
 
 @Injectable()
 export class TransactionService {

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { Events } from '../common/constants';
+import { Events } from '../../common/constants';
 import { TransactionEvent } from 'src/common/proto/service';
 
 @Injectable()

@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import BalanceCheckpoint from '../entities/blance-checkpoint.entity';
+import BalanceCheckpoint from '../../entities/blance-checkpoint.entity';
 import { DataSource, Repository } from 'typeorm';
-import Card from '../entities/card.entitiy';
+import Card from '../../entities/card.entitiy';
 import Transaction from 'src/entities/transaction.entity';
 import Money from 'src/common/money';
-import { CardService } from './card.service';
+import { CardService } from '@services/card-service/card.service';
 
 @Injectable()
 export class BalanceService {

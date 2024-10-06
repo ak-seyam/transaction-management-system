@@ -6,8 +6,8 @@ import {
   TransactionHistoryResponse,
   TransactionServiceController,
   TransactionServiceControllerMethods,
-} from '../common/proto/service';
-import { TransactionService } from '../services/transaction.service';
+} from '@common/proto/service';
+import { TransactionService } from '@services/transaction-service/transaction.service';
 import {
   Ctx,
   EventPattern,
