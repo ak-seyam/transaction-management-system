@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import BalanceCheckpoint from '@entities/blance-checkpoint.entity';
-import { DataSource, Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import Card from '@entities/card.entitiy';
 import Transaction from '@entities/transaction.entity';
 import Money from '@common/money';
@@ -8,74 +8,48 @@ import { CardService } from '@services/card-service/card.service';
 
 @Injectable()
 export class BalanceService {
-  constructor(
-    private dataSource: DataSource,
-    private cardService: CardService,
-  ) {}
+  constructor(private cardService: CardService) {}
 
-  async getBalance(cardToken: string) {
-    const queryRunner = this.dataSource.createQueryRunner();
+  /**
+   * NOTE: this transaction is expected to to be run within a transaction
+   * @returns the balance for the user
+   */
+  async getBalance(card: Card, queryRunner: QueryRunner) {
+    // get latest balance checkpoint
+    const latestBalanceCheckpoint = await this.getLatestBalanceCheckpoint(
+      queryRunner.manager.getRepository(BalanceCheckpoint),
+      card,
+    );
 
-    try {
-      const card = await this.cardService.findCardByCardToken(cardToken);
+    // get all transactions from that balance
+    const transactions = await this.getTransactionsFrom(
+      queryRunner.manager.getRepository(Transaction),
+      latestBalanceCheckpoint?.createdAt,
+      card,
+    );
 
-      if (!card) {
-        throw new Error('Unmanaged card token'); // TODO through domain specific errors
-      }
+    // calculate the balance
+    const utilizationAfterLastCheckpoint =
+      this.calculateUtilization(transactions);
 
-      await queryRunner.startTransaction();
-
-      // lock the card
-      await queryRunner.manager
-        .getRepository(Card)
-        .createQueryBuilder('card')
-        .setLock('pessimistic_write')
-        .where('card.id = :id', { id: cardToken })
-        .getOne();
-
-      // get latest balance checkpoint
-      const latestBalanceCheckpoint = await this.getLatestBalanceCheckpoint(
-        queryRunner.manager.getRepository(BalanceCheckpoint),
+    const balance = new Money({
+      amount: this.calculateBalanceAmount(
         card,
-      );
+        latestBalanceCheckpoint,
+        utilizationAfterLastCheckpoint,
+      ),
+      fractionalDigits: card.limitFractionalDigits,
+      currency: card.limitCurrency,
+    });
 
-      // get all transactions from that balance
-      const transactions = await this.getTransactionsFrom(
-        queryRunner.manager.getRepository(Transaction),
-        latestBalanceCheckpoint?.createdAt,
-        card,
-      );
+    // create checkpoint
+    await this.createNewBalanceCheckpoint(
+      queryRunner.manager.getRepository(BalanceCheckpoint),
+      card,
+      balance,
+    );
 
-      // calculate the balance
-      const utilizationAfterLastCheckpoint =
-        this.calculateUtilization(transactions);
-
-      const balance = new Money({
-        amount: this.calculateBalanceAmount(
-          card,
-          latestBalanceCheckpoint,
-          utilizationAfterLastCheckpoint,
-        ),
-        fractionalDigits: card.limitFractionalDigits,
-        currency: card.limitCurrency,
-      });
-
-      // create checkpoint
-      await this.createNewBalanceCheckpoint(
-        queryRunner.manager.getRepository(BalanceCheckpoint),
-        card,
-        balance,
-      );
-
-      // commit transaction
-      await queryRunner.commitTransaction();
-      // return balance
-
-      return balance;
-    } catch (e) {
-      Logger.error(`error while getting balance`, e);
-      await queryRunner.rollbackTransaction();
-    }
+    return balance;
   }
 
   private calculateBalanceAmount(

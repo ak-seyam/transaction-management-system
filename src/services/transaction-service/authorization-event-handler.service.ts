@@ -4,10 +4,10 @@ import {
   NotificationStrategy,
   TransactionEventHandler,
 } from './transaction-event-handler';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import Transaction from '@entities/transaction.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { BalanceService } from '@services/balance-service/balance.service';
 import Card from '@entities/card.entitiy';
 import { Events } from '@common/constants';
@@ -23,6 +23,7 @@ export default class AuthorizationEventHandler
     private transactionRepository: Repository<Transaction>,
     private balanceService: BalanceService,
     @InjectRepository(Card) private cardRepository: Repository<Card>,
+    private dataSource: DataSource,
   ) {}
 
   canHandler(messageType: MessaageType): boolean {
@@ -34,36 +35,48 @@ export default class AuthorizationEventHandler
     ctx: KafkaContext,
     notificationStrategy: NotificationStrategy,
   ): Promise<void> {
-    const card = await this.cardRepository.findOne({
-      where: {
-        cardToken: event.cardToken,
-      },
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
 
-    const balance = await this.balanceService.getBalance(card.id);
+    try {
+      await queryRunner.startTransaction();
+      // lock the card
+      const card = await queryRunner.manager
+        .getRepository(Card)
+        .createQueryBuilder('card')
+        .setLock('pessimistic_write')
+        .where('card.id = :id', { id: event.cardToken })
+        .getOne();
 
-    const canCover = event.amount <= balance.amountInBaseCurrency;
+      const balance = await this.balanceService.getBalance(card, queryRunner);
 
-    if (!canCover) {
+      const canCover = event.amount <= balance.amountInBaseCurrency;
+
+      if (!canCover) {
+        await notificationStrategy(
+          Events.TRANSACTION_AUTHORIZING_REJECTED,
+          event,
+          ctx,
+        );
+      }
+
+      const authorizationTrx = createTranscation(
+        event,
+        card,
+        TransactionStatus.AUTHORIZED,
+      );
+
+      await this.transactionRepository.save(authorizationTrx);
+
+      await queryRunner.commitTransaction();
+
       await notificationStrategy(
-        Events.TRANSACTION_AUTHORIZING_REJECTED,
+        Events.TRANSACTION_AUTHORIZING_ACCEPTED,
         event,
         ctx,
       );
+    } catch (e) {
+      Logger.error(`Got erro ${e} while authorizing`, e);
+      await queryRunner.rollbackTransaction();
     }
-
-    const authorizationTrx = createTranscation(
-      event,
-      card,
-      TransactionStatus.AUTHORIZED,
-    );
-
-    await this.transactionRepository.save(authorizationTrx);
-
-    await notificationStrategy(
-      Events.TRANSACTION_AUTHORIZING_ACCEPTED,
-      event,
-      ctx,
-    );
   }
 }
