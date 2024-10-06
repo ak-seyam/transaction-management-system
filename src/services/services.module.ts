@@ -1,17 +1,21 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import BalanceCheckpoint from 'src/entities/blance-checkpoint.entity';
-import Card from 'src/entities/card.entitiy';
-import Transaction from 'src/entities/transaction.entity';
-import { BalanceService } from './balance-service/balance.service';
+import BalanceCheckpoint from '@entities/blance-checkpoint.entity';
+import Card from '@entities/card.entitiy';
+import Transaction from '@entities/transaction.entity';
+import { BalanceService } from '@services/balance-service/balance.service';
 import { CardService } from '@services/card-service/card.service';
-import { NotificationService } from './notification-service/notification.service';
+import { NotificationService } from '@services/notification-service/notification.service';
 import { TransactionService } from '@services/transaction-service/transaction.service';
-import { AnalyticsService } from './analytics-service/analytics.service';
+import { AnalyticsService } from '@services/analytics-service/analytics.service';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import AuthorizationEventHandler from '@services/transaction-service/authorization-event-handler.service';
+import ValidatorModule from '@validators/validators.module';
+import ClearingEventHandler from './transaction-service/clearing-event-handler.service';
 
 @Module({
   imports: [
+    ValidatorModule,
     TypeOrmModule.forFeature([Card, BalanceCheckpoint, Transaction]),
     ClientsModule.register([
       {
@@ -37,6 +41,8 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
     NotificationService,
     TransactionService,
     AnalyticsService,
+    AuthorizationEventHandler,
+    ClearingEventHandler,
   ],
   exports: [TransactionService],
 })

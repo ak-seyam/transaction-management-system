@@ -10,15 +10,16 @@ import {
   TransactionStatus as TransactionStatusDto,
 } from '@common/proto/service';
 import { InjectRepository } from '@nestjs/typeorm';
-import Transaction from 'src/entities/transaction.entity';
+import Transaction from '@entities/transaction.entity';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Events } from 'src/common/constants';
-import TransactionStatus from 'src/entities/transaction-status';
-import { BalanceService } from '@services/balance-service/balance.service';
-import Card from 'src/entities/card.entitiy';
-import { mapProvider } from 'src/common/utils';
+import { Events } from '@common/constants';
+import TransactionStatus from '@entities/transaction-status';
+import Card from '@entities/card.entitiy';
 import { CardService } from '@services/card-service/card.service';
+import EventValidator from '@validators/event-validator.validator';
+import AuthorizationEventHandler from '@services/transaction-service/authorization-event-handler.service';
+import ClearingEventHandler from '@services/transaction-service/clearing-event-handler.service';
 
 @Injectable()
 export class TransactionService {
@@ -27,14 +28,17 @@ export class TransactionService {
     @InjectRepository(Transaction)
     private transactionRepository: Repository<Transaction>,
     private eventEmitter: EventEmitter2,
-    private balanceService: BalanceService,
     @InjectRepository(Card)
     private cardRepository: Repository<Card>,
     private cardService: CardService,
+    private eventValidator: EventValidator,
+    private authorizationEventHandler: AuthorizationEventHandler,
+    private clearingEventHandler: ClearingEventHandler,
   ) {}
 
   async receiveProviderTransactionEvent(event: TransactionEvent): Promise<Ack> {
     // TODO add event validation
+    this.eventValidator.validateEvent(event);
     try {
       Logger.log(`sending ${event}`);
       await new Promise((resolve, reject) => {
@@ -66,138 +70,27 @@ export class TransactionService {
 
   async handleTransactionEvent(event: TransactionEvent, ctx: KafkaContext) {
     if (event.type === MessaageType.AUTHORIZATION) {
-      await this.authorize(event, ctx);
+      await this.authorizationEventHandler.handle(event, ctx, this.notify);
     } else {
-      await this.clear(event, ctx);
+      await this.clearingEventHandler.handle(event, ctx, this.notify);
     }
   }
 
-  async clear(event: TransactionEvent, ctx: KafkaContext) {
-    const existingTransaction = await this.transactionRepository
-      .createQueryBuilder('trx')
-      .leftJoinAndSelect('trx.card', 'card')
-      .where('trx.idempotencyKey = :id', { id: event.eventId })
-      .getOne();
-    if (existingTransaction != null) {
-      Logger.warn(
-        `duplicate clearning messages for trx ${existingTransaction.id}`,
-      ); // To improve we can build alerts on this
-      return;
-    }
-
-    const authorizationTrx = await this.transactionRepository.findOne({
-      where: {
-        reference: event.reference,
-        status: TransactionStatus.AUTHORIZED,
-      },
-    });
-
-    if (!authorizationTrx) {
-      await this.notify(Events.TRANSACTION_CLEARING_REJECTED, event, ctx);
-      return;
-    }
-
-    await this.validateClearingRequest(authorizationTrx, event, ctx);
-
-    const card = await this.cardRepository.findOne({
-      where: { cardToken: event.cardToken },
-    });
-
-    const clearingTrx = this.createTransaction(
-      event,
-      card,
-      TransactionStatus.CLEARED,
-    );
-
-    await this.transactionRepository.save(clearingTrx);
-
-    await this.notify(Events.TRANSACTION_CLEARING_ACCEPTED, event, ctx);
-  }
-
-  async notify(eventType: Events, event: TransactionEvent, ctx: KafkaContext) {
+  private async notify(
+    eventType: Events,
+    event: TransactionEvent,
+    ctx: KafkaContext,
+  ) {
     await this.eventEmitter.emitAsync(eventType, event);
     await this.commit(ctx);
   }
 
-  async authorize(event: TransactionEvent, ctx: KafkaContext) {
-    const card = await this.cardRepository.findOne({
-      where: {
-        cardToken: event.cardToken,
-      },
-    });
-
-    const balance = await this.balanceService.getBalance(card.id);
-
-    const canCover = event.amount <= balance.amountInBaseCurrency;
-
-    if (!canCover) {
-      this.notify(Events.TRANSACTION_AUTHORIZING_REJECTED, event, ctx);
-    }
-
-    const authorizationTrx = this.createTransaction(
-      event,
-      card,
-      TransactionStatus.AUTHORIZED,
-    );
-
-    await this.transactionRepository.save(authorizationTrx);
-
-    await this.notify(Events.TRANSACTION_AUTHORIZING_ACCEPTED, event, ctx);
-  }
-
-  async commit(ctx: KafkaContext) {
+  private async commit(ctx: KafkaContext) {
     const { offset } = ctx.getMessage();
     const partition = ctx.getPartition();
     const topic = ctx.getTopic();
     const consumer = ctx.getConsumer();
     await consumer.commitOffsets([{ topic, partition, offset }]);
-  }
-
-  private createTransaction(
-    event: TransactionEvent,
-    card: Card,
-    status: TransactionStatus,
-  ) {
-    const trx = new Transaction();
-    trx.amount = event.amount;
-    trx.card = card;
-    trx.amount = event.amount;
-    trx.currency = event.currency;
-    trx.fractionalDigits = event.fractionalDigits;
-    trx.feesAmount = event.feesAmount;
-    trx.feesCurrency = event.feesCurrency;
-    trx.feesFractionalDigits = event.feesFractionalDigits;
-    trx.idempotencyKey = event.eventId;
-    trx.psp = mapProvider(event.provider);
-    trx.providerEventTime = event.providerEventTime;
-    trx.reference = event.reference;
-    trx.status = status;
-    return trx;
-  }
-
-  async validateClearingRequest(
-    authorizationTrx: Transaction,
-    event: TransactionEvent,
-    ctx: KafkaContext,
-  ) {
-    if (!event.amount) {
-      this.commit(ctx);
-      throw new Error('Invalid amount'); // TODO use domain speicfic error
-    }
-    if (event.amount != authorizationTrx.amount) {
-      this.commit(ctx);
-      throw new Error('Invalid amount'); // TODO use domain speicfic error
-    }
-    const existingClearingRequest = await this.transactionRepository.findOne({
-      where: {
-        reference: authorizationTrx.reference,
-        status: TransactionStatus.CLEARED,
-      },
-    });
-    if (existingClearingRequest != null) {
-      await this.notify(Events.TRANSACTION_AUTHORIZING_REJECTED, event, ctx);
-      throw new Error('Transaction clearing already exist'); // TODO use domain speicfic error
-    }
   }
 
   async getTransactionHistory(

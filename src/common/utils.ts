@@ -1,5 +1,5 @@
-import PSP from 'src/entities/transaction-psp';
-import { Provider } from './proto/service';
+import PSP from '@entities/transaction-psp';
+import { Provider } from '@common/proto/service';
 
 export function mapProvider(provider: Provider): PSP {
   switch (provider) {

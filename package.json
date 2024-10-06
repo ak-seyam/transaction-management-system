@@ -90,7 +90,10 @@
         "<rootDir>/entities/$1"
       ],
       "@services/(.*)": [
-        "./src/services/$1"
+        "<rootDir>/services/$1"
+      ],
+      "@validators/(.*)": [
+        "<rootDir>/validators/$1"
       ]
     }
   }

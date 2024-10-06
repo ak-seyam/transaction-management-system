@@ -7,9 +7,9 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import TransactionStatus from './transaction-status';
-import PSP from './transaction-psp';
-import Card from 'src/entities/card.entitiy';
+import TransactionStatus from '@entities/transaction-status';
+import PSP from '@entities/transaction-psp';
+import Card from '@entities/card.entitiy';
 
 @Entity()
 export default class Transaction {

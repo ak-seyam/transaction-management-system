@@ -1,5 +1,5 @@
-import BalanceCheckpoint from 'src/entities/blance-checkpoint.entity';
-import Transaction from 'src/entities/transaction.entity';
+import BalanceCheckpoint from '@entities/blance-checkpoint.entity';
+import Transaction from '@entities/transaction.entity';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'cards' })
