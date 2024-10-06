@@ -94,6 +94,9 @@
       ],
       "@validators/(.*)": [
         "<rootDir>/validators/$1"
+      ],
+      "@config/(.*)": [
+        "<rootDir>/config/$1"
       ]
     }
   }

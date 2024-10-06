@@ -22,7 +22,8 @@
       "@common/*": ["./src/common/*"],
       "@entities/*": ["./src/entities/*"],
       "@controllers/*": ["./src/controllers/*"],
-      "@validators/*": ["./src/validators/*"]
+      "@validators/*": ["./src/validators/*"],
+      "@config/*": ["./src/config/*"]
     }
   }
 }
