@@ -114,7 +114,10 @@ export class BalanceService {
     }
     const transactions = await repo
       .createQueryBuilder('trx')
-      .where('trx.createdAt > :createdAt', { createdAt })
+      .where('trx.createdAt > :createdAt and status = :status', {
+        createdAt,
+        status: TransactionStatus.AUTHORIZED,
+      })
       .getMany();
     return transactions;
   }
