@@ -5,6 +5,7 @@ import Card from '@entities/card.entitiy';
 import Transaction from '@entities/transaction.entity';
 import Money from '@common/money';
 import { CardService } from '@services/card-service/card.service';
+import TransactionStatus from '@entities/transaction-status';
 
 @Injectable()
 export class BalanceService {
@@ -107,8 +108,9 @@ export class BalanceService {
     card: Card,
   ) {
     if (!createdAt) {
-      return await repo.find({ where: { card } });
-    } else {
+      return await repo.find({
+        where: { card, status: TransactionStatus.AUTHORIZED },
+      });
     }
     const transactions = await repo
       .createQueryBuilder('trx')
