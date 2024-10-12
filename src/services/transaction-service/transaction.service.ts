@@ -70,9 +70,17 @@ export class TransactionService {
 
   async handleTransactionEvent(event: TransactionEvent, ctx: KafkaContext) {
     if (event.type === MessaageType.AUTHORIZATION) {
-      await this.authorizationEventHandler.handle(event, ctx, this.notify);
+      await this.authorizationEventHandler.handle(
+        event,
+        ctx,
+        this.notify.bind(this),
+      );
     } else {
-      await this.clearingEventHandler.handle(event, ctx, this.notify);
+      await this.clearingEventHandler.handle(
+        event,
+        ctx,
+        this.notify.bind(this),
+      );
     }
   }
 

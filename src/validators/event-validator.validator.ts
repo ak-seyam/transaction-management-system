@@ -16,10 +16,12 @@ export default class EventValidator {
   }
 
   private checkAmounts(transactionEvent: TransactionEvent) {
-    if (transactionEvent.amount === 0) {
+    const trxAmount = (transactionEvent.amount as any)['low']; // TODO SEARCH FOR a better representation
+    if (!trxAmount || trxAmount === 0) {
       throw new Error('amount cannot be zero');
     }
-    if (transactionEvent.feesAmount < 0) {
+    const feesAmount = (transactionEvent.feesAmount as any)['low'];
+    if (feesAmount && feesAmount <= 0) {
       throw new Error('fees cannot be negative');
     }
   }

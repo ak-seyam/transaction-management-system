@@ -10,12 +10,11 @@ export function createTranscation(
   transactionStatus: TransactionStatus,
 ): Transaction {
   const trx = new Transaction();
-  trx.amount = event.amount;
+  trx.amount = (event.amount as any)['low'].toString(); // TODO check a better way with no hacks
   trx.card = card;
-  trx.amount = event.amount;
   trx.currency = event.currency;
   trx.fractionalDigits = event.fractionalDigits;
-  trx.feesAmount = event.feesAmount;
+  trx.feesAmount = (event.feesAmount as any)['low'].toString();
   trx.feesCurrency = event.feesCurrency;
   trx.feesFractionalDigits = event.feesFractionalDigits;
   trx.idempotencyKey = event.eventId;

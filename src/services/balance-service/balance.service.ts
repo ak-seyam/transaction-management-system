@@ -59,7 +59,10 @@ export class BalanceService {
     utilizationAfterLastCheckpoint: number,
   ): number {
     if (latestBalanceCheckpoint) {
-      return latestBalanceCheckpoint.amount - utilizationAfterLastCheckpoint;
+      const amountAsNumber = parseInt(
+        latestBalanceCheckpoint.amount.toString(),
+      );
+      return amountAsNumber - utilizationAfterLastCheckpoint;
     }
     return card.limitAmount - utilizationAfterLastCheckpoint;
   }
@@ -71,7 +74,7 @@ export class BalanceService {
       if (visitedTransactions.has(trx.reference)) {
         continue;
       }
-      sum += trx.amount;
+      sum += parseInt(trx.amount.toString());
       visitedTransactions.add(trx.reference);
     }
     return sum;
@@ -96,7 +99,7 @@ export class BalanceService {
   ) {
     const checkpoint = new BalanceCheckpoint();
     checkpoint.card = card;
-    checkpoint.amount = balance.amountInBaseCurrency;
+    checkpoint.amount = `${balance.amountInBaseCurrency}`;
     checkpoint.currency = balance.currency;
     checkpoint.fractionalDigits = balance.fractionalDigits;
     return await repo.save(checkpoint);

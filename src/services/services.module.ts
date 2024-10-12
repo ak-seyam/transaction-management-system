@@ -12,38 +12,39 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import AuthorizationEventHandler from '@services/transaction-service/authorization-event-handler.service';
 import ValidatorModule from '@validators/validators.module';
 import ClearingEventHandler from './transaction-service/clearing-event-handler.service';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
-  imports: [
-    ValidatorModule,
-    TypeOrmModule.forFeature([Card, BalanceCheckpoint, Transaction]),
-    ClientsModule.register([
-      {
-        name: 'TRANSACTION_SERVICE',
-        transport: Transport.KAFKA,
-        options: {
-          client: {
-            brokers: ['localhost:9092'], // TODO use env vars
-          },
-          run: {
-            autoCommit: false,
-          },
-          consumer: {
-            groupId: 'transaction-service-consumer-group', // TODO use env vars
-          },
-        },
-      },
-    ]),
-  ],
-  providers: [
-    BalanceService,
-    CardService,
-    NotificationService,
-    TransactionService,
-    AnalyticsService,
-    AuthorizationEventHandler,
-    ClearingEventHandler,
-  ],
-  exports: [TransactionService],
+	imports: [
+		ValidatorModule,
+		TypeOrmModule.forFeature([Card, BalanceCheckpoint, Transaction]),
+		ClientsModule.register([
+			{
+				name: 'TRANSACTION_SERVICE',
+				transport: Transport.KAFKA,
+				options: {
+					client: {
+						brokers: ['localhost:9092'], // TODO use env vars
+					},
+					run: {
+						autoCommit: false,
+					},
+					consumer: {
+						groupId: 'transaction-service-consumer-group', // TODO use env vars
+					},
+				},
+			},
+		]),
+	],
+	providers: [
+		BalanceService,
+		CardService,
+		NotificationService,
+		TransactionService,
+		AnalyticsService,
+		AuthorizationEventHandler,
+		ClearingEventHandler,
+	],
+	exports: [TransactionService],
 })
-export class ServicesModule {}
+export class ServicesModule { }

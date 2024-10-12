@@ -99,7 +99,8 @@ export default class ClearingEventHandler implements TransactionEventHandler {
       );
       throw new Error('Invalid amount'); // TODO use domain speicfic error
     }
-    if (event.amount != authorizationTrx.amount) {
+
+    if (event.amount !== authorizationTrx.amount) {
       await notificaitonStrategy(
         Events.TRANSACTION_CLEARING_REJECTED,
         event,

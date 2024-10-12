@@ -6,13 +6,13 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import TypeOrmConfig from '@config/typeorm-config';
 
 @Module({
-  imports: [
-    TypeOrmModule.forRoot(TypeOrmConfig),
-    ServicesModule,
-    ControllersModule,
-    EventEmitterModule.forRoot(),
-  ],
-  controllers: [],
-  providers: [],
+	imports: [
+		TypeOrmModule.forRoot(TypeOrmConfig),
+		ServicesModule,
+		ControllersModule,
+		EventEmitterModule.forRoot(),
+	],
+	controllers: [],
+	providers: [],
 })
-export class AppModule {}
+export class AppModule { }

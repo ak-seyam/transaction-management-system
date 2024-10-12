@@ -13,6 +13,7 @@ import Card from '@entities/card.entitiy';
 import { Events } from '@common/constants';
 import { createTranscation } from '@services/transaction-service/transaction-util';
 import TransactionStatus from '@entities/transaction-status';
+import { CardService } from '@services/card-service/card.service';
 
 @Injectable()
 export default class AuthorizationEventHandler
@@ -22,8 +23,8 @@ export default class AuthorizationEventHandler
     @InjectRepository(Transaction)
     private transactionRepository: Repository<Transaction>,
     private balanceService: BalanceService,
-    @InjectRepository(Card) private cardRepository: Repository<Card>,
     private dataSource: DataSource,
+    private cardService: CardService,
   ) {}
 
   canHandler(messageType: MessaageType): boolean {
@@ -39,8 +40,12 @@ export default class AuthorizationEventHandler
 
     try {
       await queryRunner.startTransaction();
+
+      // TODO This is a hack to mock having cards on prod it should have a consistent behavior
+      const card = await this.cardService.getCardByCardToken(event.cardToken);
+
       // lock the card
-      const card = await queryRunner.manager
+      const lockedCard = await queryRunner.manager
         .getRepository(Card)
         .createQueryBuilder('card')
         .setLock('pessimistic_write')
@@ -49,7 +54,7 @@ export default class AuthorizationEventHandler
 
       const balance = await this.balanceService.getBalance(card, queryRunner);
 
-      const canCover = event.amount <= balance.amountInBaseCurrency;
+      const canCover = parseInt(event.amount) <= balance.amountInBaseCurrency;
 
       if (!canCover) {
         await notificationStrategy(
@@ -61,7 +66,7 @@ export default class AuthorizationEventHandler
 
       const authorizationTrx = createTranscation(
         event,
-        card,
+        lockedCard,
         TransactionStatus.AUTHORIZED,
       );
 
@@ -75,7 +80,8 @@ export default class AuthorizationEventHandler
         ctx,
       );
     } catch (e) {
-      Logger.error(`Got erro ${e} while authorizing`, e);
+      Logger.error(`Got error ${e} while authorizing`, e);
+      Logger.error(e.stack);
       await queryRunner.rollbackTransaction();
     }
   }

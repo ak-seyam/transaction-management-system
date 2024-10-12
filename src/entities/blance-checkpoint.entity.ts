@@ -19,11 +19,11 @@ export default class BalanceCheckpoint {
   @ManyToOne(() => Card, (card) => card.balanceCheckpoints)
   card: Card;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
   @Column({ name: 'amount', type: 'bigint' })
-  amount: number;
+  amount: string;
 
   @Column({ name: 'fractional_digits', type: 'int' })
   fractionalDigits: number;
