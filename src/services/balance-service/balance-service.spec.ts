@@ -124,6 +124,29 @@ describe('Balance service unit test suite', () => {
     );
   });
 
+  it('should getBalance correctly using existing transctions from last checkpoint [no existing transactions and with existing checkpoint]', async () => {
+    // given
+    const cardBalance = 100_000;
+    const card = getTestCard(cardBalance);
+    const lastCheckpoint = getTestLastCheckpoint(cardBalance, card);
+    const existingTransactions = [];
+    const mockedTransactions: Promise<Transaction[]> = new Promise((resolve) =>
+      resolve(existingTransactions),
+    );
+    const mockedLastCheckpoint: Promise<BalanceCheckpoint | null | undefined> =
+      new Promise((resolve) => resolve(lastCheckpoint));
+    const queryRunner = getMockedQueryRunner(
+      mockedLastCheckpoint,
+      mockedTransactions,
+    );
+
+    // when
+    const balance = await balanceService.getBalance(card, queryRunner);
+
+    // then
+    expect(balance.amountInBaseCurrency).toEqual(cardBalance);
+  });
+
   it('should getBalance correctly using existing transctions from last checkpoint [with existing more than one transaction no existing checkpoint]', async () => {
     // given
     const cardBalance = 100_000;
