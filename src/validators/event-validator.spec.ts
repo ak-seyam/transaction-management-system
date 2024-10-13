@@ -10,11 +10,11 @@ describe('EventValidator test suite', () => {
   describe('validate transaction events', () => {
     it('should result correct amount all values are present', () => {
       const event: TransactionEvent = {
-        amount: 100_000,
+        amount: '100000',
         cardToken: '234293048',
         currency: 'AED',
         eventId: '2313u1io23ui1o2u',
-        feesAmount: 0,
+        feesAmount: '0',
         feesCurrency: 'AED',
         feesFractionalDigits: 2,
         fractionalDigits: 2,
@@ -27,11 +27,11 @@ describe('EventValidator test suite', () => {
     });
     it('should result invalid amount amount is not positive', () => {
       const event: TransactionEvent = {
-        amount: 0,
+        amount: '0',
         cardToken: '234293048',
         currency: 'AED',
         eventId: '2313u1io23ui1o2u',
-        feesAmount: 0,
+        feesAmount: '0',
         feesCurrency: 'AED',
         feesFractionalDigits: 2,
         fractionalDigits: 2,
@@ -44,11 +44,11 @@ describe('EventValidator test suite', () => {
     });
     it('should result invalid amount fees are negative', () => {
       const event: TransactionEvent = {
-        amount: 0,
+        amount: '0',
         cardToken: '234293048',
         currency: 'AED',
         eventId: '2313u1io23ui1o2u',
-        feesAmount: -1,
+        feesAmount: '-1',
         feesCurrency: 'AED',
         feesFractionalDigits: 2,
         fractionalDigits: 2,
@@ -61,11 +61,11 @@ describe('EventValidator test suite', () => {
     });
     it('should result invalid currency is null', () => {
       const event: TransactionEvent = {
-        amount: 0,
+        amount: '0',
         cardToken: '234293048',
         currency: null,
         eventId: '2313u1io23ui1o2u',
-        feesAmount: -1,
+        feesAmount: '-1',
         feesCurrency: 'AED',
         feesFractionalDigits: 2,
         fractionalDigits: 2,

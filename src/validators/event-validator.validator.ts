@@ -1,5 +1,6 @@
 import { TransactionEvent } from '@common/proto/service';
 import { Injectable } from '@nestjs/common';
+import { getEventAmount } from '@services/transaction-service/transaction-util';
 
 @Injectable()
 export default class EventValidator {
@@ -16,11 +17,11 @@ export default class EventValidator {
   }
 
   private checkAmounts(transactionEvent: TransactionEvent) {
-    const trxAmount = (transactionEvent.amount as any)['low']; // TODO SEARCH FOR a better representation
+    const trxAmount = getEventAmount(transactionEvent.amount);
     if (!trxAmount || trxAmount === 0) {
-      throw new Error('amount cannot be zero');
+      throw new Error('amount is required and cannot be zero');
     }
-    const feesAmount = (transactionEvent.feesAmount as any)['low'];
+    const feesAmount = getEventAmount(transactionEvent.feesAmount);
     if (feesAmount && feesAmount <= 0) {
       throw new Error('fees cannot be negative');
     }

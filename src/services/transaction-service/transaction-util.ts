@@ -10,11 +10,11 @@ export function createTranscation(
   transactionStatus: TransactionStatus,
 ): Transaction {
   const trx = new Transaction();
-  trx.amount = (event.amount as any)['low'].toString(); // TODO check a better way with no hacks
+  trx.amount = getEventAmount(event.amount).toString();
   trx.card = card;
   trx.currency = event.currency;
   trx.fractionalDigits = event.fractionalDigits;
-  trx.feesAmount = (event.feesAmount as any)['low'].toString();
+  trx.feesAmount = getEventAmount(event.feesAmount).toString();
   trx.feesCurrency = event.feesCurrency;
   trx.feesFractionalDigits = event.feesFractionalDigits;
   trx.idempotencyKey = event.eventId;
@@ -23,4 +23,17 @@ export function createTranscation(
   trx.reference = event.reference;
   trx.status = transactionStatus;
   return trx;
+}
+
+export function getEventAmount(amount: any): number | undefined {
+  if (amount == undefined) {
+    return undefined;
+  }
+  if (typeof amount === 'string') {
+    return parseInt(amount);
+  } else if (typeof amount === 'number') {
+    return amount;
+  } else {
+    return amount.low as number;
+  }
 }

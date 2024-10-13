@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import BalanceCheckpoint from '@entities/blance-checkpoint.entity';
-import { QueryRunner, Repository } from 'typeorm';
+import { MoreThan, QueryRunner, Repository } from 'typeorm';
 import Card from '@entities/card.entitiy';
 import Transaction from '@entities/transaction.entity';
 import Money from '@common/money';
@@ -115,13 +115,17 @@ export class BalanceService {
         where: { card, status: TransactionStatus.AUTHORIZED },
       });
     }
-    const transactions = await repo
-      .createQueryBuilder('trx')
-      .where('trx.createdAt > :createdAt and status = :status', {
-        createdAt,
-        status: TransactionStatus.AUTHORIZED,
-      })
-      .getMany();
+    // const transactions = await repo
+    //   .createQueryBuilder('trx')
+    //   .where('trx.createdAt > :createdAt and status = :status', {
+    //     createdAt,
+    //     status: TransactionStatus.AUTHORIZED,
+    //   })
+    //   .getMany();
+    const transactions = await repo.findBy({
+      status: TransactionStatus.AUTHORIZED,
+      createdAt: MoreThan(createdAt),
+    });
     return transactions;
   }
 }

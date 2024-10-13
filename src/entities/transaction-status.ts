@@ -1,6 +1,6 @@
 enum TransactionStatus {
-  AUTHORIZED,
-  CLEARED,
+  AUTHORIZED = '0',
+  CLEARED = '1',
 }
 
 export default TransactionStatus;
