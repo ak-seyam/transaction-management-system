@@ -4,12 +4,11 @@ import { MoreThan, QueryRunner, Repository } from 'typeorm';
 import Card from '@entities/card.entitiy';
 import Transaction from '@entities/transaction.entity';
 import Money from '@common/money';
-import { CardService } from '@services/card-service/card.service';
 import TransactionStatus from '@entities/transaction-status';
 
 @Injectable()
 export class BalanceService {
-  constructor(private cardService: CardService) {}
+  constructor() {}
 
   /**
    * NOTE: this transaction is expected to to be run within a transaction
@@ -53,7 +52,7 @@ export class BalanceService {
     return balance;
   }
 
-  private calculateBalanceAmount(
+  calculateBalanceAmount(
     card: Card,
     latestBalanceCheckpoint: BalanceCheckpoint,
     utilizationAfterLastCheckpoint: number,
